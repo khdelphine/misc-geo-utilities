@@ -1,86 +1,99 @@
 ---
 title: "Graticules"
 author: "Delphine"
-date: "September 10, 2019"
+date: "September 15, 2019"
 ---
 
-## Create graticule lines
+## 
+initialize
 
-```{r sequences}
+```{r init}
+
+library(sf)
 
 # Initialize variables
 home = "C:/Users/delph/Desktop/GIS/Capstone/Data/Ancillary/"
+
+# Define the projection (Pulkovo 1942 / 3-degree Gauss-Kruger zone 10)
 crs <- st_crs(2526)
 
+# Load the seed point data for the graticules
+seed_pts <- read.csv(paste0(home,"graticule_pts.csv"), header=TRUE)
+#seed_pts
+
+
+```
+## Generate graticule lines
+
+```{r graticule_lines2}
+
+# Initialize the list to store the lines
 mygeom <- c()
-   
-x_seed <- c(10436076.72, 10436882.26, 10436648.27, 10437481.66,  10453104.01, 10452875.04, 10452696.28,10453467.03, 10469091.11, 10468907.88, 10468667.97, 10469485.62, 10485101.29, 10484918.46, 10484691.49, 10484511.07)
 
-y_seed <- c(6098364.35, 6117342.35, 6135376.80, 6154359.86,  6116656.56, 6097671.56, 6135681.56, 6153671.55, 6097947.68,6116960.96, 6134985.76, 6153975.41, 6098263.42, 6117280.39, 6135298.87, 6154317.36)
+# Create horizontal lines for all 16 map sheets
+for (i in 1:16){
+  sheet_id1 <- seed_pts$ID[i]
+  x1 <- seed_pts$x_seed[i]
+  y1 <- seed_pts$y_seed[i]
 
-## *****************************************
-#for (i in 1:16){
-for (i in 1:8){
-  # Create horizontal lines
-  x1 <- x_seed[i]
-  y1 <- y_seed[i]
+  # For each map sheet create 19 horizontal lines
   for (j in 1:19) {
+    # Compute the coordinate values for the new line
     x2 <- x1 + 999.9 * 16
-    y2 <- y1 + -43 * 16
+    y2 <- y1 + -43.8 * 16
+    # Create well known text (wkt) string for the new line
     ls <- paste("LINESTRING (", x1, y1, ",", x2, y2, ")", sep=" ")
-    myline = st_sf(geom = st_as_sfc(ls), crs= crs)
+    # Create the new line sf object
+    myline = st_sf(sheet_id=sheet_id1[i], geom = st_as_sfc(ls), crs= crs)
+    # Add it to the list
     mygeom <- rbind(mygeom, myline)
     x1 <- x1 + 42.5
     y1 <- y1 + 999
   }
+}
 
-  # Create vertical lines
-  x1 <- x_seed[i]
-  y1 <- y_seed[i]
-  for (val in 1:16) {
-    x2 <- x1 + 42.2 * 19
+# Create vertical lines for all 16 map sheets
+for (i in 1:16){
+  sheet_id1 <- seed_pts$ID[i]
+  x1 <- seed_pts$x_seed[i]
+  y1 <- seed_pts$y_seed[i]
+
+  # For each map sheet create 16 vertical lines
+  for (j in 1:16) {
+    # Compute the coordinate values for the new line
+    x2 <- x1 + 43.5 * 19
     y2 <- y1 + 999 * 19
+    # Create well known text (wkt) string for the new line
     ls <- paste("LINESTRING (", x1, y1, ",", x2, y2, ")", sep=" ")
-    myline = st_sf(geom = st_as_sfc(ls), crs= crs)
+    # Create the new line sf object
+    myline = st_sf(sheet_id=sheet_id1[i], geom = st_as_sfc(ls), crs= crs)
+    # Add it to the list
     mygeom <- rbind(mygeom, myline)
+    
     x1 <- x1 + 999.7
-    y1 <- y1 + -42.5
+    y1 <- y1 + -43.8
   }
+
 }
 
 
-plot(mygeom)
+```
 
-# Export to a shapefile
+
+## Plot graticule lines
+
+```{r plot_graticules}
+
+plot(mygeom)
+```
+
+
+## Export to a shapefile
+
+```{r plot_graticules}
+
 st_write(mygeom, paste0(home, "graticule.shp"),  delete_layer = TRUE)
 
-# Note: to add field "a" use:
-# a = st_sf(a=1, geom = st_as_sfc("LINESTRING (0 1, 2 3)"), crs= crs)
-
 ```
 
-## Create graticule intersections
-
-Not used currently, but could be useful at some point.
-
-```{r graticule_points}
-library(sf)
-
-coords_df <- data.frame(c(),c())
-
-for (val in 1:6) {
-  x = seq(x_seed , by = 1000, length.out=5)
-  y = seq(y_seed, by = 35, length.out=5)
-#  coords_df <-  data.frame(x, y)
-  coords_df <- rbind(coords_df, data.frame(x, y))
-  x_seed <- x_seed + 35
-  y_seed <- y_seed + 1000
-#  coords_df
-} 
-coords_df 
-
-coords_sf = st_as_sf(coords_df, coords = c("x", "y"), crs = 2526, agr = "constant")
-plot(coords_sf)
-
-```
 
